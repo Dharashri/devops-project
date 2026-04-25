@@ -1,0 +1,97 @@
+---
+# ─────────────────────────────────────────────
+#  ansible/playbooks/configure_jenkins_node.yml
+#  Registers devops-agent as a Jenkins node
+#  via Jenkins CLI / REST API
+# ─────────────────────────────────────────────
+
+- name: Register devops-agent as Jenkins node
+  hosts: devops_master
+  become: true
+  vars:
+    jenkins_url: "http://localhost:8080"
+    jenkins_user: "admin"
+    # Replace with the actual initial admin password or an API token
+    jenkins_password: "{{ lookup('file', '/var/lib/jenkins/secrets/initialAdminPassword') }}"
+    agent_name: "devops-agent"
+    agent_host: "172.31.41.103"          # ← replace with actual IP
+    agent_workdir: "/home/jenkins/agent"
+    agent_ssh_key_path: "/var/lib/jenkins/.ssh/id_rsa"
+
+  tasks:
+
+    # ── Download Jenkins CLI jar ──────────────────────────────────
+    - name: Download Jenkins CLI jar
+      get_url:
+        url: "{{ jenkins_url }}/jnlpJars/jenkins-cli.jar"
+        dest: /tmp/jenkins-cli.jar
+        mode: '0644'
+      retries: 5
+      delay: 10
+
+    # ── Ensure Jenkins SSH key exists ─────────────────────────────
+    - name: Create .ssh directory for jenkins user
+      file:
+        path: /var/lib/jenkins/.ssh
+        state: directory
+        owner: jenkins
+        group: jenkins
+        mode: '0700'
+
+    - name: Generate SSH key for Jenkins (if not present)
+      become_user: jenkins
+      openssh_keypair:
+        path: "{{ agent_ssh_key_path }}"
+        type: rsa
+        size: 4096
+        state: present
+
+    - name: Read Jenkins public key
+      slurp:
+        src: "{{ agent_ssh_key_path }}.pub"
+      register: jenkins_pubkey
+
+    - name: Display public key (copy to agent's authorized_keys)
+      debug:
+        msg: |
+          === Copy this public key to devops-agent's /home/jenkins/.ssh/authorized_keys ===
+          {{ jenkins_pubkey.content | b64decode }}
+
+    # ── Create node config XML ────────────────────────────────────
+    - name: Create Jenkins node config XML
+      copy:
+        dest: /tmp/jenkins_node_config.xml
+        content: |
+          <slave>
+            <name>{{ agent_name }}</name>
+            <description>Jenkins Docker Build Agent</description>
+            <remoteFS>{{ agent_workdir }}</remoteFS>
+            <numExecutors>2</numExecutors>
+            <mode>NORMAL</mode>
+            <retentionStrategy class="hudson.slaves.RetentionStrategy$Always"/>
+            <launcher class="hudson.plugins.sshslaves.SSHLauncher" plugin="ssh-slaves">
+              <host>{{ agent_host }}</host>
+              <port>22</port>
+              <credentialsId>jenkins-agent-ssh</credentialsId>
+              <launchTimeoutSeconds>60</launchTimeoutSeconds>
+              <maxNumRetries>3</maxNumRetries>
+              <retryWaitTime>30</retryWaitTime>
+            </launcher>
+            <label>devops-agent docker</label>
+            <nodeProperties/>
+          </slave>
+
+    # ── Register node via Jenkins CLI ─────────────────────────────
+    - name: Create Jenkins node via CLI
+      shell: |
+        java -jar /tmp/jenkins-cli.jar \
+          -s {{ jenkins_url }} \
+          -auth {{ jenkins_user }}:{{ jenkins_password }} \
+          create-node {{ agent_name }} < /tmp/jenkins_node_config.xml
+      register: node_create
+      failed_when: node_create.rc != 0 and 'already exists' not in node_create.stderr
+      changed_when: node_create.rc == 0
+
+    - name: Node registration result
+      debug:
+        msg: "{{ 'Node created successfully' if node_create.rc == 0 else 'Node already exists' }}"

@@ -1,0 +1,18 @@
+---
+# ─────────────────────────────────────────────
+#  ansible/site.yml
+#  Master playbook — runs all roles in sequence
+#  Usage: ansible-playbook -i inventory/hosts.ini site.yml
+# ─────────────────────────────────────────────
+
+- name: "Phase 1 — Setup devops-master"
+  import_playbook: playbooks/setup_master.yml
+
+- name: "Phase 1 — Setup devops-agent"
+  import_playbook: playbooks/setup_agent.yml
+
+- name: "Phase 1 — Register agent as Jenkins node"
+  import_playbook: playbooks/configure_jenkins_node.yml
+
+- name: "Phase 2 — Setup Kubernetes cluster"
+  import_playbook: playbooks/setup_kubernetes.yml

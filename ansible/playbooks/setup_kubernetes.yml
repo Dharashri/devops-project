@@ -1,0 +1,222 @@
+---
+# ─────────────────────────────────────────────
+#  ansible/playbooks/setup_kubernetes.yml
+#  Installs kubeadm, kubelet, kubectl on all K8s nodes
+#  Initializes control-plane & joins worker
+# ─────────────────────────────────────────────
+
+# ═══════════════════════════════════════════════
+#  PLAY 1 – Common setup on ALL K8s nodes
+# ═══════════════════════════════════════════════
+- name: Common Kubernetes prerequisites
+  hosts: k8s_control_plane:k8s_workers
+  become: true
+  vars:
+    k8s_version: "1.29"
+
+  tasks:
+
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    - name: Disable swap immediately
+      command: swapoff -a
+      changed_when: false
+
+    - name: Disable swap permanently in /etc/fstab
+      replace:
+        path: /etc/fstab
+        regexp: '^([^#].*\s+swap\s+.*)$'
+        replace: '# \1'
+
+    - name: Load kernel modules for containerd
+      modprobe:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - overlay
+        - br_netfilter
+
+    - name: Persist kernel modules
+      copy:
+        dest: /etc/modules-load.d/k8s.conf
+        content: |
+          overlay
+          br_netfilter
+
+    - name: Set sysctl params for Kubernetes networking
+      sysctl:
+        name: "{{ item.key }}"
+        value: "{{ item.value }}"
+        state: present
+        sysctl_file: /etc/sysctl.d/k8s.conf
+        reload: yes
+      loop:
+        - { key: "net.bridge.bridge-nf-call-iptables",  value: "1" }
+        - { key: "net.bridge.bridge-nf-call-ip6tables", value: "1" }
+        - { key: "net.ipv4.ip_forward",                 value: "1" }
+
+    # ── Install containerd ────────────────────────────────────────
+    - name: Install containerd prerequisites
+      apt:
+        name: [apt-transport-https, ca-certificates, curl, gnupg]
+        state: present
+
+    - name: Add Docker GPG key (for containerd)
+      get_url:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        dest: /usr/share/keyrings/docker-archive-keyring.gpg
+
+    - name: Add Docker apt repo (for containerd)
+      apt_repository:
+        repo: "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+        state: present
+        filename: docker
+
+    - name: Install containerd
+      apt:
+        name: containerd.io
+        state: present
+        update_cache: yes
+
+    - name: Generate default containerd config
+      shell: containerd config default > /etc/containerd/config.toml
+      args:
+        creates: /etc/containerd/config.toml
+
+    - name: Enable SystemdCgroup in containerd config
+      replace:
+        path: /etc/containerd/config.toml
+        regexp: 'SystemdCgroup = false'
+        replace: 'SystemdCgroup = true'
+
+    - name: Restart and enable containerd
+      systemd:
+        name: containerd
+        state: restarted
+        enabled: yes
+
+    # ── Install kubeadm / kubelet / kubectl ───────────────────────
+    - name: Add Kubernetes GPG key
+      get_url:
+        url: "https://pkgs.k8s.io/core:/stable:/v{{ k8s_version }}/deb/Release.key"
+        dest: /usr/share/keyrings/kubernetes-archive-keyring.gpg
+
+    - name: Add Kubernetes apt repo
+      apt_repository:
+        repo: "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v{{ k8s_version }}/deb/ /"
+        state: present
+        filename: kubernetes
+
+    - name: Install kubeadm, kubelet, kubectl
+      apt:
+        name:
+          - kubelet
+          - kubeadm
+          - kubectl
+        state: present
+        update_cache: yes
+
+    - name: Hold Kubernetes packages at current version
+      dpkg_selections:
+        name: "{{ item }}"
+        selection: hold
+      loop:
+        - kubelet
+        - kubeadm
+        - kubectl
+
+    - name: Enable and start kubelet
+      systemd:
+        name: kubelet
+        enabled: yes
+        state: started
+
+
+# ═══════════════════════════════════════════════
+#  PLAY 2 – Initialize Kubernetes control plane
+# ═══════════════════════════════════════════════
+- name: Initialize Kubernetes control plane
+  hosts: k8s_control_plane
+  become: true
+
+  tasks:
+
+    - name: Check if cluster is already initialized
+      stat:
+        path: /etc/kubernetes/admin.conf
+      register: k8s_init_check
+
+    - name: Initialize kubeadm cluster
+      command: >
+        kubeadm init
+        --pod-network-cidr=10.244.0.0/16
+        --apiserver-advertise-address={{ ansible_default_ipv4.address }}
+      when: not k8s_init_check.stat.exists
+      register: kubeadm_init
+
+    - name: Create .kube directory for ubuntu user
+      file:
+        path: /home/ubuntu/.kube
+        state: directory
+        owner: ubuntu
+        group: ubuntu
+        mode: '0755'
+
+    - name: Copy admin.conf to ubuntu user's kube config
+      copy:
+        src: /etc/kubernetes/admin.conf
+        dest: /home/ubuntu/.kube/config
+        remote_src: yes
+        owner: ubuntu
+        group: ubuntu
+        mode: '0600'
+
+    - name: Install Flannel CNI network plugin
+      become_user: ubuntu
+      command: kubectl apply -f https://raw.githubusercontent.com/flannel-io/flannel/master/Documentation/kube-flannel.yml
+      environment:
+        KUBECONFIG: /home/ubuntu/.kube/config
+
+    - name: Generate join command for workers
+      command: kubeadm token create --print-join-command
+      register: join_command
+      changed_when: false
+
+    - name: Save join command to local file
+      local_action:
+        module: copy
+        content: "{{ join_command.stdout }}"
+        dest: /tmp/k8s_join_command.sh
+        mode: '0755'
+
+
+# ═══════════════════════════════════════════════
+#  PLAY 3 – Join worker node to cluster
+# ═══════════════════════════════════════════════
+- name: Join worker nodes to cluster
+  hosts: k8s_workers
+  become: true
+
+  tasks:
+
+    - name: Check if node is already in cluster
+      stat:
+        path: /etc/kubernetes/kubelet.conf
+      register: kubelet_conf
+
+    - name: Read join command from temp file
+      set_fact:
+        join_cmd: "{{ lookup('file', '/tmp/k8s_join_command.sh') }}"
+      when: not kubelet_conf.stat.exists
+
+    - name: Join worker to cluster
+      command: "{{ join_cmd }}"
+      when: not kubelet_conf.stat.exists
+
+    - name: Confirm kubelet is running
+      systemd:
+        name: kubelet
+        state: started
+        enabled: yes

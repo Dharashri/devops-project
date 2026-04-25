@@ -1,0 +1,106 @@
+---
+# ─────────────────────────────────────────────
+#  ansible/playbooks/setup_agent.yml
+#  Installs: Java 17, Docker
+#  Target: devops-agent (Jenkins build agent)
+# ─────────────────────────────────────────────
+
+- name: Configure devops-agent (Docker + Java)
+  hosts: devops_agent
+  become: true
+
+  tasks:
+
+    # ── System Prerequisites ──────────────────────────────────────
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Install prerequisite packages
+      apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg
+          - software-properties-common
+          - git
+        state: present
+
+    # ── Java 17 ──────────────────────────────────────────────────
+    - name: Install Java 17 (OpenJDK)
+      apt:
+        name: openjdk-17-jdk
+        state: present
+
+    - name: Set JAVA_HOME in /etc/environment
+      lineinfile:
+        path: /etc/environment
+        line: 'JAVA_HOME="/usr/lib/jvm/java-17-openjdk-amd64"'
+        create: yes
+
+    # ── Docker ───────────────────────────────────────────────────
+    - name: Add Docker GPG key
+      get_url:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        dest: /usr/share/keyrings/docker-archive-keyring.gpg
+        mode: '0644'
+
+    - name: Add Docker apt repository
+      apt_repository:
+        repo: "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+        state: present
+        filename: docker
+
+    - name: Update apt cache after adding Docker repo
+      apt:
+        update_cache: yes
+
+    - name: Install Docker CE
+      apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-buildx-plugin
+          - docker-compose-plugin
+        state: present
+
+    - name: Start and enable Docker service
+      systemd:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Create jenkins user on agent
+      user:
+        name: jenkins
+        shell: /bin/bash
+        create_home: yes
+        groups: docker
+        append: yes
+        state: present
+
+    - name: Add ubuntu user to docker group
+      user:
+        name: ubuntu
+        groups: docker
+        append: yes
+
+    - name: Create Jenkins agent working directory
+      file:
+        path: /home/jenkins/agent
+        state: directory
+        owner: jenkins
+        group: jenkins
+        mode: '0755'
+
+    - name: Verify Docker installation
+      command: docker --version
+      register: docker_ver
+      changed_when: false
+
+    - name: Show Docker version
+      debug:
+        msg: "{{ docker_ver.stdout }}"
