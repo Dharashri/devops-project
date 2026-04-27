@@ -1,0 +1,1089 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AWS DevOps Architecture</title>
+<link href="https://fonts.googleapis.com/css2?family=Amazon+Ember:wght@400;700&family=Noto+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: #f1f3f5;
+  font-family: 'Noto Sans', 'Segoe UI', sans-serif;
+  min-height: 100vh;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 32px;
+}
+
+.page {
+  background: white;
+  border-radius: 4px;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.12);
+  padding: 32px 36px 40px;
+  width: 1320px;
+  min-width: 1320px;
+}
+
+/* ── TITLE ─────────────────────────────────────── */
+.title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid #E47911;
+}
+.title-left { display: flex; align-items: center; gap: 14px; }
+.aws-badge {
+  background: #232F3E;
+  color: #FF9900;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 4px;
+  letter-spacing: 0.05em;
+}
+.title-text h1 {
+  font-size: 20px;
+  font-weight: 700;
+  color: #16191F;
+  letter-spacing: -0.01em;
+}
+.title-text p {
+  font-size: 11px;
+  color: #687078;
+  margin-top: 2px;
+  font-family: monospace;
+}
+.title-meta {
+  font-size: 11px;
+  color: #687078;
+  text-align: right;
+  line-height: 1.7;
+  font-family: monospace;
+}
+.title-meta b { color: #16191F; }
+
+/* ── LEGEND ─────────────────────────────────────── */
+.legend {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+  padding: 10px 14px;
+  background: #FAFAFA;
+  border: 1px solid #E5E9EF;
+  border-radius: 4px;
+}
+.leg-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  color: #414D5C;
+}
+.leg-swatch {
+  width: 24px; height: 12px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+.leg-swatch.dashed {
+  background: transparent;
+  border: 2px dashed;
+}
+
+/* ── MAIN DIAGRAM ───────────────────────────────── */
+.diagram {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* ── BOXES ──────────────────────────────────────── */
+
+/* AWS Region */
+.region-box {
+  border: 2px solid #E47911;
+  border-radius: 8px;
+  padding: 12px 16px 20px;
+  position: relative;
+  background: #FFFDF8;
+}
+.region-label {
+  position: absolute;
+  top: -13px; left: 14px;
+  background: white;
+  padding: 0 8px;
+  display: flex; align-items: center; gap: 7px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #E47911;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* VPC */
+.vpc-box {
+  border: 2px dashed #7B42BC;
+  border-radius: 6px;
+  padding: 12px 14px 18px;
+  position: relative;
+  background: #FDFAFF;
+  margin-top: 4px;
+}
+.vpc-label {
+  position: absolute;
+  top: -11px; left: 12px;
+  background: white;
+  padding: 0 7px;
+  display: flex; align-items: center; gap: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #7B42BC;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* Subnet */
+.subnet-box {
+  border: 1.5px dashed #1A73E8;
+  border-radius: 6px;
+  padding: 12px 14px 16px;
+  position: relative;
+  background: #F8FBFF;
+  margin-top: 8px;
+}
+.subnet-label {
+  position: absolute;
+  top: -10px; left: 12px;
+  background: white;
+  padding: 0 7px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #1A73E8;
+  letter-spacing: 0.05em;
+}
+
+/* Security Group */
+.sg-box {
+  border: 1.5px dashed #DD344C;
+  border-radius: 6px;
+  padding: 10px 12px 14px;
+  position: relative;
+  background: #FFFAFB;
+  margin-top: 8px;
+}
+.sg-label {
+  position: absolute;
+  top: -10px; left: 10px;
+  background: white;
+  padding: 0 7px;
+  display: flex; align-items: center; gap: 5px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #DD344C;
+  letter-spacing: 0.04em;
+}
+
+/* K8s Cluster */
+.k8s-cluster-box {
+  border: 2px dashed #326CE5;
+  border-radius: 6px;
+  padding: 12px 14px 16px;
+  position: relative;
+  background: #F8FAFF;
+  margin-top: 12px;
+}
+.k8s-cluster-label {
+  position: absolute;
+  top: -11px; left: 12px;
+  background: white;
+  padding: 0 8px;
+  display: flex; align-items: center; gap: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #326CE5;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* ── GRIDS ──────────────────────────────────────── */
+.grid-2   { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.grid-3   { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+.grid-4   { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px; }
+.grid-2-1 { display: grid; grid-template-columns: 1.5fr 1fr; gap: 16px; }
+
+/* ── SERVICE NODE ───────────────────────────────── */
+.svc {
+  background: white;
+  border: 1px solid #D5DBDB;
+  border-radius: 6px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  transition: box-shadow 0.15s, transform 0.15s;
+  position: relative;
+  overflow: hidden;
+}
+.svc::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+}
+.svc:hover {
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  transform: translateY(-1px);
+}
+
+.svc-icon-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  margin-bottom: 8px;
+}
+.svc-icon {
+  width: 40px; height: 40px;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+}
+.svc-title { font-size: 13px; font-weight: 700; color: #16191F; line-height: 1.2; }
+.svc-type  { font-size: 10px; color: #687078; font-family: monospace; margin-top: 1px; }
+
+.svc-detail {
+  font-size: 11px;
+  color: #414D5C;
+  line-height: 1.5;
+  width: 100%;
+}
+.svc-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 8px;
+  width: 100%;
+}
+.tag {
+  font-size: 10px;
+  font-family: monospace;
+  padding: 2px 7px;
+  border-radius: 3px;
+  border: 1px solid;
+  line-height: 1.4;
+}
+
+.svc-divider {
+  width: 100%;
+  height: 1px;
+  background: #E5E9EF;
+  margin: 8px 0;
+}
+
+/* ── AWS SERVICE COLOR VARIANTS ─────────────────── */
+/* EC2 */
+.c-ec2::before { background: #ED7100; }
+.c-ec2 .svc-icon { background: #FEF2E4; }
+
+/* Jenkins */
+.c-jenkins::before { background: #335061; }
+.c-jenkins .svc-icon { background: #EBF2F5; }
+
+/* Docker */
+.c-docker::before { background: #0db7ed; }
+.c-docker .svc-icon { background: #E4F7FD; }
+
+/* Kubernetes */
+.c-k8s::before { background: #326CE5; }
+.c-k8s .svc-icon { background: #EBF1FD; }
+
+/* Ansible */
+.c-ansible::before { background: #EE0000; }
+.c-ansible .svc-icon { background: #FDE8E8; }
+
+/* Terraform */
+.c-terraform::before { background: #7B42BC; }
+.c-terraform .svc-icon { background: #F3EAF9; }
+
+/* Git */
+.c-git::before { background: #F05032; }
+.c-git .svc-icon { background: #FEF0ED; }
+
+/* IAM */
+.c-iam::before { background: #DD344C; }
+.c-iam .svc-icon { background: #FDECEF; }
+
+/* SG */
+.c-sg::before { background: #DD344C; }
+
+/* ── CONNECTOR LINES ────────────────────────────── */
+.connectors {
+  position: relative;
+  width: 100%;
+  overflow: visible;
+}
+
+/* ── FLOW ARROW ROW ─────────────────────────────── */
+.flow-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 10px 0;
+  flex-wrap: wrap;
+}
+.flow-node {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.flow-box {
+  padding: 6px 14px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1.5px solid;
+  white-space: nowrap;
+}
+.flow-arrow {
+  font-size: 16px;
+  color: #687078;
+  padding: 0 2px;
+  flex-shrink: 0;
+}
+.flow-label {
+  font-size: 9px;
+  font-family: monospace;
+  color: #687078;
+  display: block;
+  text-align: center;
+  margin-top: 2px;
+}
+
+/* ── PORT TABLE ─────────────────────────────────── */
+.port-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 10px;
+  font-family: monospace;
+  margin-top: 6px;
+}
+.port-table th {
+  background: #F2F3F3;
+  color: #414D5C;
+  padding: 4px 8px;
+  text-align: left;
+  font-weight: 600;
+  border: 1px solid #D5DBDB;
+}
+.port-table td {
+  padding: 3px 8px;
+  border: 1px solid #E5E9EF;
+  color: #16191F;
+}
+.port-table tr:nth-child(even) td { background: #FAFAFA; }
+
+/* ── EXTERNAL ZONE ──────────────────────────────── */
+.external-zone {
+  background: #F8F9FA;
+  border: 1.5px solid #C3C9CF;
+  border-radius: 6px;
+  padding: 12px 14px 16px;
+  position: relative;
+  margin-bottom: 16px;
+}
+.external-label {
+  position: absolute;
+  top: -10px; left: 12px;
+  background: white;
+  padding: 0 7px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #687078;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* ── IAM SIDEBAR ────────────────────────────────── */
+.iam-bar {
+  background: #FFF8F8;
+  border: 1.5px solid #F5C6CC;
+  border-radius: 6px;
+  padding: 10px 14px;
+  margin-top: 14px;
+}
+
+/* ── MAIN LAYOUT ────────────────────────────────── */
+.main-layout {
+  display: grid;
+  grid-template-columns: 1fr 260px;
+  gap: 16px;
+  align-items: start;
+}
+.right-col {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* ── APP OUTPUT BANNER ──────────────────────────── */
+.app-banner {
+  background: linear-gradient(135deg, #E8F5E9, #E3F2FD);
+  border: 2px solid #4CAF50;
+  border-radius: 6px;
+  padding: 14px 18px;
+  margin-top: 14px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.app-banner-icon { font-size: 32px; flex-shrink: 0; }
+.app-banner-title { font-size: 14px; font-weight: 700; color: #1B5E20; }
+.app-banner-url   { font-family: monospace; font-size: 12px; color: #0D47A1; margin-top: 3px; }
+.app-banner-msg   { font-size: 11px; color: #414D5C; margin-top: 3px; font-style: italic; }
+
+/* ── SECTION HEADING ────────────────────────────── */
+.sec-head {
+  font-size: 10px;
+  font-weight: 700;
+  color: #687078;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  margin: 12px 0 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.sec-head::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #E5E9EF;
+}
+
+/* ── ANSIBLE PLAYBOOK LIST ──────────────────────── */
+.playbook-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 6px;
+}
+.playbook-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  background: #FEF8F8;
+  border: 1px solid #F5C6CC;
+  border-radius: 4px;
+  font-size: 10px;
+  font-family: monospace;
+  color: #414D5C;
+}
+.playbook-arrow { color: #DD344C; font-size: 12px; }
+.playbook-target { margin-left: auto; color: #DD344C; font-weight: 600; }
+
+/* ── PIPELINE STAGES ────────────────────────────── */
+.pipeline-stages {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0;
+  margin-top: 8px;
+  border: 1px solid #D5DBDB;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.p-stage {
+  padding: 8px 10px;
+  text-align: center;
+  border-right: 1px solid #D5DBDB;
+  background: white;
+  position: relative;
+}
+.p-stage:last-child { border-right: none; }
+.p-stage:last-child { background: #F0FFF4; }
+.p-stage-num { font-size: 9px; font-family: monospace; color: #687078; }
+.p-stage-name { font-size: 11px; font-weight: 700; color: #16191F; margin: 2px 0; }
+.p-stage-detail { font-size: 9px; font-family: monospace; color: #687078; }
+.p-stage-arrow {
+  position: absolute;
+  right: -8px; top: 50%;
+  transform: translateY(-50%);
+  font-size: 14px;
+  color: #687078;
+  z-index: 1;
+  background: white;
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- TITLE -->
+  <div class="title-row">
+    <div class="title-left">
+      <div class="aws-badge">AWS</div>
+      <div class="title-text">
+        <h1>End-to-End DevOps Architecture — High Level</h1>
+        <p>Terraform · Ansible · Jenkins · Docker · Kubernetes · EC2 · VPC · IAM · Security Groups</p>
+      </div>
+    </div>
+    <div class="title-meta">
+      <div><b>Region:</b> us-east-1</div>
+      <div><b>Instances:</b> 4 × EC2 (t3.medium)</div>
+      <div><b>OS:</b> Ubuntu 22.04 LTS</div>
+      <div><b>Key Pair:</b> devops-key</div>
+    </div>
+  </div>
+
+  <!-- LEGEND -->
+  <div class="legend">
+    <div class="leg-item"><div class="leg-swatch" style="background:#E47911;border-radius:2px;"></div>AWS Region</div>
+    <div class="leg-item"><div class="leg-swatch dashed" style="border-color:#7B42BC;"></div>VPC</div>
+    <div class="leg-item"><div class="leg-swatch dashed" style="border-color:#1A73E8;"></div>Public Subnet</div>
+    <div class="leg-item"><div class="leg-swatch dashed" style="border-color:#DD344C;"></div>Security Group</div>
+    <div class="leg-item"><div class="leg-swatch dashed" style="border-color:#326CE5;"></div>Kubernetes Cluster</div>
+    <div class="leg-item"><div class="leg-swatch" style="background:#ED7100;"></div>EC2 Instance</div>
+    <div class="leg-item"><div class="leg-swatch" style="background:#7B42BC;"></div>Terraform</div>
+    <div class="leg-item"><div class="leg-swatch" style="background:#EE0000;"></div>Ansible</div>
+    <div class="leg-item"><div class="leg-swatch" style="background:#335061;"></div>Jenkins</div>
+    <div class="leg-item"><div class="leg-swatch" style="background:#0db7ed;"></div>Docker</div>
+    <div class="leg-item"><div class="leg-swatch" style="background:#326CE5;"></div>Kubernetes</div>
+    <div class="leg-item"><div class="leg-swatch" style="background:#F05032;"></div>GitHub</div>
+    <div class="leg-item"><div class="leg-swatch" style="background:#C8D6E5;"></div>External (outside AWS)</div>
+  </div>
+
+  <!-- MAIN LAYOUT: LEFT = DIAGRAM, RIGHT = DETAILS -->
+  <div class="main-layout">
+
+    <!-- ── LEFT COLUMN ───────────────────────────── -->
+    <div>
+
+      <!-- EXTERNAL ZONE -->
+      <div class="external-zone">
+        <div class="external-label">External — Outside AWS</div>
+        <div class="grid-3">
+
+          <!-- Developer -->
+          <div class="svc c-git">
+            <div class="svc-icon-row">
+              <div class="svc-icon">👩‍💻</div>
+              <div>
+                <div class="svc-title">Developer</div>
+                <div class="svc-type">Local Machine</div>
+              </div>
+            </div>
+            <div class="svc-detail">Writes code, configs, runs Terraform CLI locally</div>
+            <div class="svc-tags">
+              <span class="tag" style="color:#F05032;border-color:#FBCDC4;background:#FEF0ED;">git push</span>
+              <span class="tag" style="color:#7B42BC;border-color:#D7B8F0;background:#F3EAF9;">terraform apply</span>
+            </div>
+          </div>
+
+          <!-- GitHub -->
+          <div class="svc c-git">
+            <div class="svc-icon-row">
+              <div class="svc-icon">🐙</div>
+              <div>
+                <div class="svc-title">GitHub Repository</div>
+                <div class="svc-type">github.com/user/devops-project</div>
+              </div>
+            </div>
+            <div class="svc-detail">Single source of truth. All automation driven from here.</div>
+            <div class="svc-tags">
+              <span class="tag" style="color:#F05032;border-color:#FBCDC4;background:#FEF0ED;">Dockerfile</span>
+              <span class="tag" style="color:#F05032;border-color:#FBCDC4;background:#FEF0ED;">Jenkinsfile</span>
+              <span class="tag" style="color:#F05032;border-color:#FBCDC4;background:#FEF0ED;">ansible/</span>
+              <span class="tag" style="color:#F05032;border-color:#FBCDC4;background:#FEF0ED;">terraform/</span>
+              <span class="tag" style="color:#F05032;border-color:#FBCDC4;background:#FEF0ED;">kubernetes/</span>
+            </div>
+          </div>
+
+          <!-- Terraform Files -->
+          <div class="svc c-terraform">
+            <div class="svc-icon-row">
+              <div class="svc-icon">⚡</div>
+              <div>
+                <div class="svc-title">Terraform CLI</div>
+                <div class="svc-type">Infrastructure as Code</div>
+              </div>
+            </div>
+            <div class="svc-detail">Phase 1: Your 4 files provision CI/CD machines</div>
+            <div class="svc-tags">
+              <span class="tag" style="color:#7B42BC;border-color:#D7B8F0;background:#F3EAF9;">data.tf</span>
+              <span class="tag" style="color:#7B42BC;border-color:#D7B8F0;background:#F3EAF9;">locals.tf</span>
+              <span class="tag" style="color:#7B42BC;border-color:#D7B8F0;background:#F3EAF9;">main.tf</span>
+              <span class="tag" style="color:#7B42BC;border-color:#D7B8F0;background:#F3EAF9;">provider.tf</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ARROW ROW 1 -->
+      <div class="flow-row" style="padding:6px 0;">
+        <div style="font-size:11px;color:#687078;font-family:monospace;display:flex;align-items:center;gap:8px;">
+          <span style="color:#7B42BC;font-weight:600;">terraform apply</span>
+          <span style="font-size:20px;color:#687078;">↓</span>
+          <span>Authenticates via IAM Role (tfrole) → Creates EC2 instances in AWS</span>
+        </div>
+      </div>
+
+      <!-- AWS REGION -->
+      <div class="region-box">
+        <div class="region-label">
+          <svg width="14" height="14" viewBox="0 0 14 14"><rect width="14" height="14" rx="3" fill="#E47911"/><text x="7" y="10.5" text-anchor="middle" fill="white" font-size="8" font-family="sans-serif" font-weight="bold">AWS</text></svg>
+          AWS Region — us-east-1
+        </div>
+
+        <!-- IAM Role at top -->
+        <div class="svc c-iam" style="margin-bottom:12px;flex-direction:row;align-items:center;gap:14px;padding:10px 14px;">
+          <div class="svc-icon" style="background:#FDECEF;font-size:20px;width:36px;height:36px;flex-shrink:0;">🔐</div>
+          <div style="flex:1;">
+            <div class="svc-title" style="font-size:12px;">IAM Role — tfrole</div>
+            <div class="svc-type">arn:aws:iam::649844050992:role/tfrole · session: "tfss" · external_id: "Dhara"</div>
+            <div style="font-size:10px;color:#414D5C;margin-top:3px;">Assumed by Terraform provider.tf · Grants: EC2:*, VPC:*, SecurityGroup:*, IAM:PassRole</div>
+          </div>
+          <div style="flex-shrink:0;">
+            <span class="tag" style="color:#DD344C;border-color:#F5C6CC;background:#FDECEF;font-size:10px;">assume_role</span>
+          </div>
+        </div>
+
+        <!-- VPC -->
+        <div class="vpc-box">
+          <div class="vpc-label">
+            <svg width="10" height="10" viewBox="0 0 10 10"><rect width="10" height="10" rx="2" fill="#7B42BC" opacity="0.5"/></svg>
+            Default VPC — 172.31.0.0/16
+          </div>
+
+          <!-- Security Group -->
+          <div class="sg-box">
+            <div class="sg-label">🛡️ Security Group — ubuntu-sg (aws_security_group.e2e-sg)</div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+              <!-- Inbound -->
+              <div>
+                <div style="font-size:10px;font-weight:700;color:#DD344C;margin-bottom:6px;letter-spacing:.05em;">INBOUND RULES</div>
+                <table class="port-table">
+                  <tr><th>Port</th><th>Protocol</th><th>Source</th><th>Purpose</th></tr>
+                  <tr><td>22</td><td>TCP</td><td>0.0.0.0/0</td><td>SSH Access</td></tr>
+                  <tr><td>80</td><td>TCP</td><td>0.0.0.0/0</td><td>HTTP</td></tr>
+                  <tr><td>443</td><td>TCP</td><td>0.0.0.0/0</td><td>HTTPS</td></tr>
+                  <tr><td>8080</td><td>TCP</td><td>0.0.0.0/0</td><td>Jenkins UI</td></tr>
+                  <tr><td>6443</td><td>TCP</td><td>0.0.0.0/0</td><td>K8s API Server</td></tr>
+                  <tr><td>30080</td><td>TCP</td><td>0.0.0.0/0</td><td>NodePort App</td></tr>
+                  <tr><td>10250-10260</td><td>TCP</td><td>self</td><td>Kubelet API</td></tr>
+                  <tr><td>2379-2380</td><td>TCP</td><td>self</td><td>etcd</td></tr>
+                </table>
+              </div>
+              <!-- Outbound -->
+              <div>
+                <div style="font-size:10px;font-weight:700;color:#DD344C;margin-bottom:6px;letter-spacing:.05em;">OUTBOUND RULES</div>
+                <table class="port-table">
+                  <tr><th>Port</th><th>Protocol</th><th>Dest</th><th>Purpose</th></tr>
+                  <tr><td>All</td><td>All</td><td>0.0.0.0/0</td><td>Allow all egress</td></tr>
+                </table>
+                <div style="margin-top:10px;font-size:10px;font-weight:700;color:#DD344C;margin-bottom:6px;letter-spacing:.05em;">KEY PAIR</div>
+                <table class="port-table">
+                  <tr><th>Name</th><th>Type</th><th>Used By</th></tr>
+                  <tr><td>devops-key</td><td>RSA 4096</td><td>All 4 EC2s</td></tr>
+                </table>
+              </div>
+            </div>
+
+            <!-- Public Subnet -->
+            <div class="subnet-box">
+              <div class="subnet-label">Public Subnet — 172.31.0.0/20 · Auto-assign Public IPv4: Enabled</div>
+
+              <!-- PHASE 1 HEADER -->
+              <div class="sec-head" style="margin-top:8px;">
+                Phase 1 — CI/CD Infrastructure (Terraform for_each = ["master","agent"])
+              </div>
+
+              <div class="grid-2">
+
+                <!-- devops-master -->
+                <div class="svc c-ec2">
+                  <div class="svc-icon-row">
+                    <div class="svc-icon">🖥️</div>
+                    <div>
+                      <div class="svc-title">devops-master</div>
+                      <div class="svc-type">aws_instance · for_each "master"</div>
+                    </div>
+                    <div style="margin-left:auto;text-align:right;">
+                      <div style="font-size:10px;font-family:monospace;color:#ED7100;font-weight:700;">t3.medium</div>
+                      <div style="font-size:9px;font-family:monospace;color:#687078;">2vCPU · 4GB RAM</div>
+                    </div>
+                  </div>
+
+                  <div style="font-size:9px;font-family:monospace;color:#687078;margin-bottom:6px;">
+                    AMI: ubuntu-jammy-22.04-amd64-server-20260218 (data.tf lookup)
+                  </div>
+
+                  <div class="svc-divider"></div>
+
+                  <div style="font-size:10px;font-weight:700;color:#687078;letter-spacing:.08em;margin-bottom:6px;">ANSIBLE: setup_master.yml installs →</div>
+                  <div class="svc-tags" style="margin-top:0;">
+                    <span class="tag" style="color:#335061;border-color:#B0C8D8;background:#EBF2F5;">Jenkins :8080</span>
+                    <span class="tag" style="color:#7B42BC;border-color:#D7B8F0;background:#F3EAF9;">Terraform v1.x</span>
+                    <span class="tag" style="color:#EE0000;border-color:#FBBBBB;background:#FDE8E8;">Ansible</span>
+                    <span class="tag" style="color:#ED7100;border-color:#F9D8AF;background:#FEF2E4;">Java 17</span>
+                    <span class="tag" style="color:#414D5C;border-color:#D5DBDB;background:#F8F9F9;">Git</span>
+                  </div>
+
+                  <div class="svc-divider"></div>
+
+                  <div style="font-size:10px;font-weight:700;color:#335061;letter-spacing:.08em;margin-bottom:5px;">JENKINS PIPELINE (Jenkinsfile from Git)</div>
+                  <div class="pipeline-stages">
+                    <div class="p-stage">
+                      <div class="p-stage-num">Stage 1</div>
+                      <div class="p-stage-name">Checkout</div>
+                      <div class="p-stage-detail">git clone</div>
+                    </div>
+                    <div class="p-stage">
+                      <div class="p-stage-num">Stage 2</div>
+                      <div class="p-stage-name">Docker Build</div>
+                      <div class="p-stage-detail">on agent</div>
+                    </div>
+                    <div class="p-stage">
+                      <div class="p-stage-num">Stage 3</div>
+                      <div class="p-stage-name">Verify</div>
+                      <div class="p-stage-detail">docker images</div>
+                    </div>
+                    <div class="p-stage" style="background:#F0FFF4;">
+                      <div class="p-stage-num">Stage 4</div>
+                      <div class="p-stage-name">Smoke Test</div>
+                      <div class="p-stage-detail">curl :8099</div>
+                    </div>
+                  </div>
+
+                  <div class="svc-divider"></div>
+                  <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                    <span class="tag" style="color:#687078;border-color:#D5DBDB;background:#F8F9F9;font-size:9px;">Public IP: auto-assigned</span>
+                    <span class="tag" style="color:#687078;border-color:#D5DBDB;background:#F8F9F9;font-size:9px;">Private: 172.31.x.x</span>
+                    <span class="tag" style="color:#687078;border-color:#D5DBDB;background:#F8F9F9;font-size:9px;">Key: devops-key</span>
+                  </div>
+                </div>
+
+                <!-- devops-agent -->
+                <div class="svc c-ec2">
+                  <div class="svc-icon-row">
+                    <div class="svc-icon">⚙️</div>
+                    <div>
+                      <div class="svc-title">devops-agent</div>
+                      <div class="svc-type">aws_instance · for_each "agent"</div>
+                    </div>
+                    <div style="margin-left:auto;text-align:right;">
+                      <div style="font-size:10px;font-family:monospace;color:#ED7100;font-weight:700;">t3.medium</div>
+                      <div style="font-size:9px;font-family:monospace;color:#687078;">2vCPU · 4GB RAM</div>
+                    </div>
+                  </div>
+
+                  <div style="font-size:9px;font-family:monospace;color:#687078;margin-bottom:6px;">
+                    AMI: ubuntu-jammy-22.04-amd64-server-20260218 (data.tf lookup)
+                  </div>
+
+                  <div class="svc-divider"></div>
+
+                  <div style="font-size:10px;font-weight:700;color:#687078;letter-spacing:.08em;margin-bottom:6px;">ANSIBLE: setup_agent.yml installs →</div>
+                  <div class="svc-tags" style="margin-top:0;">
+                    <span class="tag" style="color:#0db7ed;border-color:#A8E3F5;background:#E4F7FD;">Docker CE</span>
+                    <span class="tag" style="color:#ED7100;border-color:#F9D8AF;background:#FEF2E4;">Java 17</span>
+                    <span class="tag" style="color:#335061;border-color:#B0C8D8;background:#EBF2F5;">Jenkins Agent</span>
+                  </div>
+
+                  <div class="svc-divider"></div>
+
+                  <div style="font-size:10px;font-weight:700;color:#0db7ed;letter-spacing:.08em;margin-bottom:5px;">DOCKER OUTPUT</div>
+                  <div style="background:#E4F7FD;border:1px solid #A8E3F5;border-radius:4px;padding:8px 10px;">
+                    <div style="font-size:11px;font-weight:700;color:#0b6f8e;">Image: prt-devops-app:latest</div>
+                    <div style="font-size:10px;font-family:monospace;color:#414D5C;margin-top:3px;">FROM nginx:stable-alpine</div>
+                    <div style="font-size:10px;font-family:monospace;color:#414D5C;">COPY app/index.html → /usr/share/nginx/html/</div>
+                    <div style="font-size:10px;font-family:monospace;color:#414D5C;">EXPOSE 80</div>
+                    <div style="font-size:10px;color:#414D5C;margin-top:4px;font-style:italic;">"Congratulations! You are halfway done with the PRT."</div>
+                  </div>
+
+                  <div class="svc-divider"></div>
+
+                  <div style="font-size:10px;font-weight:700;color:#687078;margin-bottom:4px;">JENKINS NODE CONFIG</div>
+                  <div style="font-size:10px;font-family:monospace;color:#414D5C;line-height:1.6;">
+                    Label: devops-agent docker<br/>
+                    Remote dir: /home/jenkins/agent<br/>
+                    Launch: SSH · Cred: jenkins-agent-ssh<br/>
+                    User: jenkins · Groups: docker
+                  </div>
+
+                  <div class="svc-divider"></div>
+                  <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                    <span class="tag" style="color:#687078;border-color:#D5DBDB;background:#F8F9F9;font-size:9px;">Public IP: auto-assigned</span>
+                    <span class="tag" style="color:#687078;border-color:#D5DBDB;background:#F8F9F9;font-size:9px;">Private: 172.31.x.x</span>
+                    <span class="tag" style="color:#687078;border-color:#D5DBDB;background:#F8F9F9;font-size:9px;">Key: devops-key</span>
+                  </div>
+                </div>
+
+              </div>
+              <!-- end grid-2 phase 1 -->
+
+              <!-- PHASE 2 HEADER -->
+              <div class="sec-head" style="margin-top:18px;">
+                Phase 6 — Kubernetes Infrastructure (Terraform from devops-master · terraform-phase2/main.tf)
+              </div>
+
+              <!-- K8S CLUSTER -->
+              <div class="k8s-cluster-box">
+                <div class="k8s-cluster-label">
+                  <svg width="12" height="12" viewBox="0 0 12 12"><polygon points="6,0 12,4 12,8 6,12 0,8 0,4" fill="#326CE5" opacity="0.6"/></svg>
+                  Kubernetes Cluster — kubeadm v1.29 · Flannel CNI 10.244.0.0/16 · containerd runtime
+                </div>
+
+                <div class="grid-2" style="margin-top:4px;">
+
+                  <!-- k8s-control-plane -->
+                  <div class="svc c-k8s">
+                    <div class="svc-icon-row">
+                      <div class="svc-icon">☸️</div>
+                      <div>
+                        <div class="svc-title">k8s-control-plane</div>
+                        <div class="svc-type">aws_instance · Kubernetes Master</div>
+                      </div>
+                      <div style="margin-left:auto;text-align:right;">
+                        <div style="font-size:10px;font-family:monospace;color:#ED7100;font-weight:700;">t3.medium</div>
+                        <div style="font-size:9px;font-family:monospace;color:#687078;">2vCPU · 4GB</div>
+                      </div>
+                    </div>
+
+                    <div class="svc-divider"></div>
+
+                    <div style="font-size:10px;font-weight:700;color:#687078;margin-bottom:6px;letter-spacing:.08em;">ANSIBLE: setup_kubernetes.yml — PLAY 2</div>
+                    <div class="svc-tags" style="margin-top:0;">
+                      <span class="tag" style="color:#326CE5;border-color:#B8CCF5;background:#EBF1FD;">kube-apiserver</span>
+                      <span class="tag" style="color:#326CE5;border-color:#B8CCF5;background:#EBF1FD;">etcd</span>
+                      <span class="tag" style="color:#326CE5;border-color:#B8CCF5;background:#EBF1FD;">kube-scheduler</span>
+                      <span class="tag" style="color:#326CE5;border-color:#B8CCF5;background:#EBF1FD;">kube-controller</span>
+                      <span class="tag" style="color:#326CE5;border-color:#B8CCF5;background:#EBF1FD;">kubectl</span>
+                      <span class="tag" style="color:#2E7D32;border-color:#A5D6A7;background:#E8F5E9;">Flannel CNI</span>
+                    </div>
+
+                    <div class="svc-divider"></div>
+                    <div style="font-size:10px;font-family:monospace;color:#414D5C;line-height:1.6;">
+                      kubeadm init --pod-network-cidr=10.244.0.0/16<br/>
+                      kubectl apply -f kube-flannel.yml<br/>
+                      Port: <span style="color:#326CE5;">:6443</span> (API Server)
+                    </div>
+                    <div class="svc-divider"></div>
+                    <div style="display:flex;gap:6px;">
+                      <span class="tag" style="color:#687078;border-color:#D5DBDB;background:#F8F9F9;font-size:9px;">Key: devops-key</span>
+                      <span class="tag" style="color:#687078;border-color:#D5DBDB;background:#F8F9F9;font-size:9px;">Private: 172.31.x.x</span>
+                    </div>
+                  </div>
+
+                  <!-- k8s-worker-1 -->
+                  <div class="svc c-k8s">
+                    <div class="svc-icon-row">
+                      <div class="svc-icon">🖥️</div>
+                      <div>
+                        <div class="svc-title">k8s-worker-1</div>
+                        <div class="svc-type">aws_instance · Kubernetes Worker</div>
+                      </div>
+                      <div style="margin-left:auto;text-align:right;">
+                        <div style="font-size:10px;font-family:monospace;color:#ED7100;font-weight:700;">t3.medium</div>
+                        <div style="font-size:9px;font-family:monospace;color:#687078;">2vCPU · 4GB</div>
+                      </div>
+                    </div>
+
+                    <div class="svc-divider"></div>
+
+                    <div style="font-size:10px;font-weight:700;color:#687078;margin-bottom:6px;letter-spacing:.08em;">ANSIBLE: setup_kubernetes.yml — PLAY 1 + 3</div>
+                    <div class="svc-tags" style="margin-top:0;">
+                      <span class="tag" style="color:#326CE5;border-color:#B8CCF5;background:#EBF1FD;">kubelet</span>
+                      <span class="tag" style="color:#326CE5;border-color:#B8CCF5;background:#EBF1FD;">kube-proxy</span>
+                      <span class="tag" style="color:#0db7ed;border-color:#A8E3F5;background:#E4F7FD;">containerd</span>
+                      <span class="tag" style="color:#326CE5;border-color:#B8CCF5;background:#EBF1FD;">kubeadm join</span>
+                    </div>
+
+                    <div class="svc-divider"></div>
+
+                    <!-- Pods -->
+                    <div style="background:#EBF1FD;border:1px solid #B8CCF5;border-radius:4px;padding:8px 10px;margin-bottom:8px;">
+                      <div style="font-size:10px;font-weight:700;color:#1A52C8;margin-bottom:5px;">PODS — Deployment: prt-devops-app (replicas: 2)</div>
+                      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                        <div style="display:flex;align-items:center;gap:5px;padding:4px 9px;background:white;border:1px solid #B8CCF5;border-radius:4px;font-size:10px;font-family:monospace;color:#326CE5;">
+                          <span style="width:6px;height:6px;border-radius:50%;background:#4CAF50;display:inline-block;animation:blink 1.8s infinite;flex-shrink:0;"></span>
+                          prt-devops-app-pod-1
+                        </div>
+                        <div style="display:flex;align-items:center;gap:5px;padding:4px 9px;background:white;border:1px solid #B8CCF5;border-radius:4px;font-size:10px;font-family:monospace;color:#326CE5;">
+                          <span style="width:6px;height:6px;border-radius:50%;background:#4CAF50;display:inline-block;animation:blink 1.8s infinite;animation-delay:.4s;flex-shrink:0;"></span>
+                          prt-devops-app-pod-2
+                        </div>
+                      </div>
+                      <div style="margin-top:7px;padding:6px 8px;background:white;border:1px solid #F0C040;border-radius:4px;">
+                        <div style="font-size:10px;font-weight:700;color:#B8860B;margin-bottom:2px;">NodePort Service: prt-devops-app-service</div>
+                        <div style="font-size:10px;font-family:monospace;color:#414D5C;">port 80 → targetPort 80 → nodePort <b style="color:#E47911;">30080</b></div>
+                      </div>
+                    </div>
+
+                    <div style="display:flex;gap:6px;">
+                      <span class="tag" style="color:#E47911;border-color:#F9D8AF;background:#FEF2E4;font-size:9px;">Access: :30080</span>
+                      <span class="tag" style="color:#687078;border-color:#D5DBDB;background:#F8F9F9;font-size:9px;">Key: devops-key</span>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+              <!-- end k8s cluster -->
+
+              <!-- APP OUTPUT BANNER -->
+              <div class="app-banner">
+                <div class="app-banner-icon">🌐</div>
+                <div style="flex:1;">
+                  <div class="app-banner-title">✅ Application Live!</div>
+                  <div class="app-banner-url">http://&lt;k8s-worker-public-ip&gt;:30080</div>
+                  <div class="app-banner-msg">"Congratulations! You are halfway done with the PRT. Keep going."</div>
+                </div>
+                <div style="font-size:10px;font-family:monospace;color:#414D5C;text-align:right;flex-shrink:0;line-height:1.8;">
+                  NGINX container<br/>2 replicas running<br/>NodePort :30080<br/>RollingUpdate strategy
+                </div>
+              </div>
+
+            </div>
+            <!-- end subnet -->
+          </div>
+          <!-- end sg -->
+        </div>
+        <!-- end vpc -->
+      </div>
+      <!-- end aws region -->
+
+    </div>
+    <!-- end left col -->
+
+    <!-- ── RIGHT COLUMN ──────────────────────────── -->
+    <div class="right-col">
+
+      <!-- Ansible Playbooks -->
+      <div class="svc c-ansible" style="padding:14px;">
+        <div class="svc-icon-row">
+          <div class="svc-icon">📋</div>
+          <div>
+            <div class="svc-title">Ansible Playbooks</div>
+            <div class="svc-type">Configuration Management</div>
+          </div>
+        </div>
+        <div class="svc-detail" style="margin-bottom:6px;">Runs from devops-master via SSH. Reads hosts.ini for targets.</div>
+        <div class="playbook-list">
+          <div class="playbook-item">
+            <span class="playbook-arrow">▶</span>
+            <span>setup_master.yml</span>
+            <span class="playbook-target">→ devops-master</span>
+          </div>
+          <div class="playbook-item">
+            <span class="playbook-arrow">▶</span>
+            <span>setup_agent.yml</span>
+            <span class="playbook-target">→ devops-agent</span>
+          </div>
+          <div class="playbook-item">
+            <span class="playbook-arrow">▶</span>
+            <span>configure_jenkins_node.yml</span>
+            <span class="playbook-target">→ devops-master</span>
+          </div>
+          <div class="playbook-item">
+            <span class="playbook-arrow">▶</span>
+            <span>setup_kubernetes.yml</span>
+            <span class="playbook-target">→ K8s nodes</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Terraform Phases -->
+      <div class="svc c-terraform" style="padding:14px;">
+        <div class="svc-icon-row">
+          <div class="svc-icon">⚡</div>
+          <div>
+            <div class="svc-title">Terraform — 2 Phases</div>
+            <div class="svc-type">Infrastructure as Code</div>
+          </div>
+        </div>
+        <div style="font-size:10px;font-weight:700;color:#7B42BC;margin:6px 0 4px;letter-spacing:.08em;">PHASE 1 — Your 4 Files</div>
+        <div style="font-size:10px;font-family:monospace;color:#414D5C;line-height:1.7;padding:6px 8px;background:#F3EAF9;border-radius:4px;border:1px solid #D7B8F0;">
+          provider.tf → IAM role assumption<br/>
+          data.tf → Ubuntu 22.04 AMI lookup<br/>
+          locals.tf → t3.medium + devops-key<br/>
+          main.tf → for_each EC2 + ubuntu-sg
+        </div>
+        <div style="font-size:10px;font-weight:700;color:#7B42BC;margin:8px 0 4px;letter-spacing:.08em;">PHASE 2 — K8s Machines</div>
+        <div style="font-size:10px;font-family:monospace;color:#414D5C;line-height:1.7;padding:6px 8px;background:#F3EAF9;border-radius:4px;border:1px solid #D7B8F0;">
+          terraform-phase2/main.tf<br/>
+          → k8s-control-plane (EC2)<br/>
+          → k8s-worker-1 (EC2)<br/>
+          → k8s security group (+30080)
+        </div>
+      </div>
+
+      <!-- Flow Summary -->
+      <div class="svc" style="padding:14px;border-color:#D5DBDB;">
+        <div style="font-size:10px;font-weight:700;color:#687078;letter-spacing:.12em;margin-bottom:10px;text-transform:uppercase;">End-to-End Flow</div>
+        <div style="display:flex;flex-direction:column;gap:4px;">
+          <div style="display:flex;align-items:center;gap:7px;font-size:11px;">
+            <span style="background:#FEF0ED;border:1px solid #F05032;color:#F05032;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600;white-space:nowrap;">1 git push</span>
+            <span style="color:#687078;font-size:10px;">Code to GitHub</span>
+          </div>
+          <div style="color:#C3C9CF;font-size:12px;padding-left:10px;">↓</div>
+          <div style="display:flex;align-items:center;gap:7px;font-size:11px;">
+            <span style="background:#F3EAF9;border:1px solid #7B42BC;color:#7B42BC;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600;white-space:nowrap;">2 terraform apply</span>
+            <span style="color:#687078;font-size:10px;">Provision 2 EC2s</span>
+          </div>
+          <div style="color:#C3C9CF;font-size:12px;padding-left:10px;">↓</div>
+          <div style="display:flex;align-items:center;gap:7px;font-size:11px;">
+            <span style="background:#FDE8E8;border:1px solid #EE0000;color:#EE0000;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600;white-space:nowrap;">3 ansible-playbook</span>
+            <span style="color:#687078;font-size:10px;">Install all tools</span>
+          </div>
+          <div style="color:#C3C9CF;font-size:12px;padding-left:10px;">↓</div>
+          <div style="display:flex;align-items:center;gap:7px;font-size:11px;">
+            <span style="background:#EBF2F5;border:1px solid #335061;color:#335061;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600;white-space:nowrap;">4 Jenkins pipeline</span>
+            <span style="color:#687078;font-size:10px;">CI/CD 4 stages</span>
+          </div>
+          <div style="color:#C3C9CF;font-size:12px;padding-left:10px;">↓</div>
+          <div style="display:flex;align-items:center;gap:7px;font-size:11px;">
+            <span style="background:#E4F7FD;border:1px solid #0db7ed;color:#0db7ed;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600;white-space:nowrap;">5 docker build</span>
+            <span style="color:#687078;font-size:10px;">Image built</span>
+          </div>
+          <div style="color:#C3C9CF;font-size:12px;padding-left:10px;">↓</div>
+          <div style="display:flex;align-items:center;gap:7px;font-size:11px;">
+            <span style="background:#F3EAF9;border:1px solid #7B42BC;color:#7B42BC;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600;white-space:nowrap;">6 terraform apply</span>
+            <span style="color:#687078;font-size:10px;">K8s EC2 nodes</span>
+          </div>
+          <div style="color:#C3C9CF;font-size:12px;padding-left:10px;">↓</div>
+          <div style="display:flex;align-items:center;gap:7px;font-size:11px;">
+            <span style="background:#FDE8E8;border:1px solid #EE0000;color:#EE0000;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600;white-space:nowrap;">7 ansible K8s</span>
+            <span style="color:#687078;font-size:10px;">Cluster setup</span>
+          </div>
+          <div style="color:#C3C9CF;font-size:12px;padding-left:10px;">↓</div>
+          <div style="display:flex;align-items:center;gap:7px;font-size:11px;">
+            <span style="background:#EBF1FD;border:1px solid #326CE5;color:#326CE5;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600;white-space:nowrap;">8 kubectl apply</span>
+            <span style="color:#687078;font-size:10px;">Deploy app</span>
+          </div>
+          <div style="color:#C3C9CF;font-size:12px;padding-left:10px;">↓</div>
+          <div style="display:flex;align-items:center;gap:7px;font-size:11px;">
+            <span style="background:#E8F5E9;border:1px solid #4CAF50;color:#2E7D32;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:700;white-space:nowrap;">🚀 App live :30080</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <!-- end right col -->
+
+  </div>
+  <!-- end main layout -->
+
+</div>
+</body>
+</html>
